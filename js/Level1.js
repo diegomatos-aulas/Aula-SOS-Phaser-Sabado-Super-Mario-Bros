@@ -24,7 +24,29 @@ export default class Level1 extends Phaser.Scene{
     this.world.setCollisionByProperty({collide : true});
 
     // Jogador
-    this.jogador = new Jogador(100, this.GAME_HEIGHT - 40, this, "Mario", "Pequeno", "Idle");
+    this.jogador = new Jogador(1600, this.GAME_HEIGHT - 40, this, "Mario", "Pequeno", "Idle");
+
+    this.world.forEachTile(criarInimigo.bind(this));
+
+    function criarInimigo(tile) {
+      if (tile.index === 64) {
+        const x = tile.getCenterX();
+        const y = tile.getCenterY();
+
+        this.add.image(x, y, "LittleGomba");
+
+        this.world.removeTileAt(tile.x, tile.y);
+      }
+
+      if (tile.index === 65) {
+        const x = tile.getCenterX();
+        const y = tile.getCenterY();
+
+        this.add.image(x, y - 4, "KoopaTroopa");
+
+        this.world.removeTileAt(tile.x, tile.y);
+      }
+    }
 
     // Cursor
     this.cursor = this.input.keyboard.createCursorKeys();
