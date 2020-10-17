@@ -1,4 +1,5 @@
 import Jogador from "./GameObjects/Jogador.js"
+import Inimigo from "./GameObjects/Inimigo.js"
 
 export default class Level1 extends Phaser.Scene{
   constructor(){
@@ -24,8 +25,9 @@ export default class Level1 extends Phaser.Scene{
     this.world.setCollisionByProperty({collide : true});
 
     // Jogador
-    this.jogador = new Jogador(1600, this.GAME_HEIGHT - 40, this, "Mario", "Pequeno", "Idle");
+    this.jogador = new Jogador(150, this.GAME_HEIGHT - 40, this, "Mario", "Pequeno", "Idle");
 
+    this.inimigos = this.add.group()
     this.world.forEachTile(criarInimigo.bind(this));
 
     function criarInimigo(tile) {
@@ -33,7 +35,8 @@ export default class Level1 extends Phaser.Scene{
         const x = tile.getCenterX();
         const y = tile.getCenterY();
 
-        this.add.image(x, y, "LittleGomba");
+        let littleGomba = new Inimigo(this, x, y, "LittleGomba");
+        this.inimigos.add(littleGomba);
 
         this.world.removeTileAt(tile.x, tile.y);
       }
@@ -42,9 +45,41 @@ export default class Level1 extends Phaser.Scene{
         const x = tile.getCenterX();
         const y = tile.getCenterY();
 
-        this.add.image(x, y - 4, "KoopaTroopa");
+        let koopaTroopa = new Inimigo(this, x, y - 4, "KoopaTroopa");
+        this.inimigos.add(koopaTroopa)
+
+        this.world.removeTileAt(tile.x, tile.y); 
+      }
+    }
+
+    this.blocosInterativos = this.add.group();
+    this.tijolos = this.add.group();
+
+    this.world.forEachTile(criarBlocos.bind(this));
+
+    function criarBlocos(tile) {
+      if (tile.index === 2) {
+        const x = tile.getCenterX();
+        const y = tile.getCenterY();
+
+        let tijolo = this.physics.add.sprite(x, y, "brick");
+        // tijolo.setImmovable();
+
+        this.tijolos.add(tijolo);
 
         this.world.removeTileAt(tile.x, tile.y);
+      }
+
+      if (tile.index === 25) {
+        const x = tile.getCenterX();
+        const y = tile.getCenterY();
+
+        let blocoInterativo = this.physics.add.sprite(x, y, "surpriseBlock");
+        // blocoInterativo.setImmovable();
+        
+        this.blocosInterativos.add(blocoInterativo)
+
+        this.world.removeTileAt(tile.x, tile.y); 
       }
     }
 
@@ -57,9 +92,14 @@ export default class Level1 extends Phaser.Scene{
 
     // Físicas
     this.physics.add.collider(this.jogador, this.world);
+    this.physics.add.collider(this.inimigos, this.world);
   }
 
   update(){
     this.jogador.update(this.cursor);
+
+    this.inimigos.children.each(inimigo => {
+      inimigo.update();
+    })
   }
 }

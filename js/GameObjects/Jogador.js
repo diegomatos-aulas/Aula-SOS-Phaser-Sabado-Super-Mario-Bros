@@ -5,7 +5,7 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
     cena.add.existing(this);
     cena.physics.add.existing(this);
 
-    this.setGravity(0, 1000);
+    // this.setGravity(0, 1000);
     this.setCollideWorldBounds(true);
 
     this.velocidade = {

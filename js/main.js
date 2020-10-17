@@ -10,7 +10,7 @@ const config = {
   physics: {
     default: "arcade",
 /*     arcade: {
-      gravity: { y: 0}
+      gravity: { y: 1200}
     } */
   },
   backgroundColor: "#5c74fc", // Cor Azul
