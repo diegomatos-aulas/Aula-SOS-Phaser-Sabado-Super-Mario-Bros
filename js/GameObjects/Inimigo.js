@@ -5,6 +5,8 @@ export default class Inimigo extends Phaser.Physics.Arcade.Sprite{
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
+    this.setGravity(0, 1200);
+
     this.direcao = -1; // ou -1
     this.velocidade = {
       x: 30
@@ -16,7 +18,6 @@ export default class Inimigo extends Phaser.Physics.Arcade.Sprite{
   update(){
     let distancia = this.x - this.scene.jogador.x;
     if (distancia < 120 && !this.inSight){
-      console.log("FOI")
       this.inSight = true;
       this.canWalk = true;
     }

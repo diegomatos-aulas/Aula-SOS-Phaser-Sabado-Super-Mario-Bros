@@ -47,15 +47,17 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
       }      
     }
 
-    if (cursor.up.isDown && !this.hasJumped && this.body.onFloor()) {
+    // console.log(cursor.up.isDown && !this.hasJumped && (this.body.onFloor() || this.body.touching.down))
+    if (cursor.up.isDown && !this.hasJumped && (this.body.onFloor() || this.body.touching.down)) {
       this.setVelocityY(-this.velocidade.y);
       this.state.stance = "Jump";
       this.hasJumped = true;
     }
 
-    if (cursor.up.isUp && this.body.onFloor()){
+    if (cursor.up.isUp && this.body.velocity.y === 0 && (this.body.onFloor() || this.body.touching.down)){
       this.hasJumped = false;
     }
+
 
     if (cursor.right.isUp && cursor.left.isUp){
       this.setVelocityX(0);

@@ -37,6 +37,7 @@ export default class Level1 extends Phaser.Scene{
 
         let littleGomba = new Inimigo(this, x, y, "LittleGomba");
         littleGomba.anims.play("Little Gomba Walking");
+        littleGomba.valor = 200;
         this.inimigos.add(littleGomba);
 
         this.world.removeTileAt(tile.x, tile.y);
@@ -48,6 +49,7 @@ export default class Level1 extends Phaser.Scene{
 
         let koopaTroopa = new Inimigo(this, x, y - 4, "KoopaTroopa");
         koopaTroopa.anims.play("Koopa Troopa Walking");
+        koopaTroopa.valor = 200;
         this.inimigos.add(koopaTroopa)
 
         this.world.removeTileAt(tile.x, tile.y); 
@@ -108,6 +110,8 @@ export default class Level1 extends Phaser.Scene{
     this.physics.add.collider(this.jogador, this.world);
     this.physics.add.collider(this.jogador, this.tijolos, this.colisaoComOsTijolos, null, this);
     this.physics.add.collider(this.jogador, this.blocosInterativos, this.colisaoComOsBlocosInterativos, null, this);
+    this.physics.add.overlap(this.jogador, this.itensColetaveis, this.coletarItem, null, this);
+    this.physics.add.overlap(this.jogador, this.inimigos, this.colisaoComOInimigo, null, this);
 
     this.physics.add.collider(this.inimigos, this.world);
     this.physics.add.collider(this.inimigos, this.tijolos);
@@ -135,7 +139,6 @@ export default class Level1 extends Phaser.Scene{
 
   colisaoComOsBlocosInterativos(jogador, bloco){
     if(jogador.y - (jogador.displayHeight/2) >= bloco.y + (bloco.displayHeight/2) && bloco.canDrop){
-      bloco.canDrop = false;
       this.animarObjeto(bloco, bloco.displayHeight/2, () => {
         bloco.anims.play("Surprise Block Inativo")
       });
@@ -155,12 +158,15 @@ export default class Level1 extends Phaser.Scene{
       } else {
         let cogumelo = this.physics.add.sprite(bloco.x, bloco.y - bloco.displayHeight, "magicMushroom");
         cogumelo.setGravityY(1200);
+        cogumelo.nome = "cogumelo";
 
         this.animarObjeto(cogumelo, cogumelo.displayHeight, null);
 
         this.itensColetaveis.add(cogumelo)
       }
      }
+
+     bloco.canDrop = false;
   }
 
   animarObjeto(objeto, distancia, onCompleteFn){
@@ -177,5 +183,37 @@ export default class Level1 extends Phaser.Scene{
   addPontuacao(pontos){
     this.pontuacao += pontos;
     this.txtPontuacao.setText(`Pontuação: ${this.pontuacao}`)
+  }
+
+  coletarItem(jogador, item){
+    if (item.nome === "cogumelo") {
+      this.itensColetaveis.remove(item, true, true);
+    }
+  }
+
+  colisaoComOInimigo(jogador, inimigo){
+    if (jogador.body.velocity.y > 0 && jogador.y + (jogador.displayHeight/2) >= inimigo.y - (inimigo.displayHeight/2)) {
+      jogador.setVelocityY(-300);
+      jogador.hasJumped = true;
+      jogador.state.stance = "Jump";
+
+      this.addPontuacao(inimigo.valor);
+
+      let textoAnim = this.add.text(jogador.x, jogador.y - jogador.body.height, inimigo.valor, { fontSize : "8px" });
+      textoAnim.setOrigin(0.5, 0.5)
+
+      this.tweens.add({
+        targets : textoAnim,
+        y : textoAnim.y - 40,
+        ease : "Circ",
+        duration : 300,
+        onComplete : function destruirTexto () {
+          textoAnim.destroy();
+        },
+        onCompleteScope : this
+      })
+
+      this.inimigos.remove(inimigo, true, true);
+    }
   }
 }
