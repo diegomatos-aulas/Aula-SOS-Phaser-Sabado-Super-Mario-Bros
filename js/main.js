@@ -9,9 +9,10 @@ const config = {
   type: Phaser.AUTO, // CANVAS ou WebGL
   physics: {
     default: "arcade",
-/*     arcade: {
-      gravity: { y: 1200}
-    } */
+    arcade: {
+      // gravity: { y: 1200}
+      debug:true
+    }
   },
   backgroundColor: "#5c74fc", // Cor Azul
   pixelArt : true,

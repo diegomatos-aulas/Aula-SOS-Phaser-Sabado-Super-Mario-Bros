@@ -7,7 +7,7 @@ export default class Inimigo extends Phaser.Physics.Arcade.Sprite{
 
     this.setGravity(0, 1200);
 
-    this.direcao = -1; // ou -1
+    this.direcao = -1; // ou 1
     this.velocidade = {
       x: 30
     }

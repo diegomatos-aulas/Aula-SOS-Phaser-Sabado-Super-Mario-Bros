@@ -36,6 +36,7 @@ export default class Level1 extends Phaser.Scene{
         const y = tile.getCenterY();
 
         let littleGomba = new Inimigo(this, x, y, "LittleGomba");
+        littleGomba.nome = "LittleGomba"
         littleGomba.anims.play("Little Gomba Walking");
         littleGomba.valor = 200;
         this.inimigos.add(littleGomba);
@@ -49,7 +50,9 @@ export default class Level1 extends Phaser.Scene{
 
         let koopaTroopa = new Inimigo(this, x, y - 4, "KoopaTroopa");
         koopaTroopa.anims.play("Koopa Troopa Walking");
+        koopaTroopa.nome = "KoopaTroopa"
         koopaTroopa.valor = 200;
+        koopaTroopa.foiAtingido = false;
         this.inimigos.add(koopaTroopa)
 
         this.world.removeTileAt(tile.x, tile.y); 
@@ -111,7 +114,7 @@ export default class Level1 extends Phaser.Scene{
     this.physics.add.collider(this.jogador, this.tijolos, this.colisaoComOsTijolos, null, this);
     this.physics.add.collider(this.jogador, this.blocosInterativos, this.colisaoComOsBlocosInterativos, null, this);
     this.physics.add.overlap(this.jogador, this.itensColetaveis, this.coletarItem, null, this);
-    this.physics.add.overlap(this.jogador, this.inimigos, this.colisaoComOInimigo, null, this);
+    this.physics.add.collider(this.jogador, this.inimigos, this.colisaoComOInimigo, null, this);
 
     this.physics.add.collider(this.inimigos, this.world);
     this.physics.add.collider(this.inimigos, this.tijolos);
@@ -133,13 +136,15 @@ export default class Level1 extends Phaser.Scene{
 
   colisaoComOsTijolos(jogador, tijolo){
     if(jogador.y - (jogador.displayHeight/2) >= tijolo.y + (tijolo.displayHeight/2)){
-      this.animarObjeto(tijolo, tijolo.displayHeight/2, null);
+      const config = { objeto : tijolo, distancia : tijolo.displayHeight/2 }
+      this.animarObjeto(config, null);
     }
   }
 
   colisaoComOsBlocosInterativos(jogador, bloco){
     if(jogador.y - (jogador.displayHeight/2) >= bloco.y + (bloco.displayHeight/2) && bloco.canDrop){
-      this.animarObjeto(bloco, bloco.displayHeight/2, () => {
+      const config = { objeto : bloco, distancia : bloco.displayHeight/2 }
+      this.animarObjeto(config, function animBlocoDesativado () {
         bloco.anims.play("Surprise Block Inativo")
       });
 
@@ -160,7 +165,8 @@ export default class Level1 extends Phaser.Scene{
         cogumelo.setGravityY(1200);
         cogumelo.nome = "cogumelo";
 
-        this.animarObjeto(cogumelo, cogumelo.displayHeight, null);
+        const config = { objeto : cogumelo, distancia : cogumelo.displayHeight }
+        this.animarObjeto(config, null);
 
         this.itensColetaveis.add(cogumelo)
       }
@@ -169,14 +175,16 @@ export default class Level1 extends Phaser.Scene{
      bloco.canDrop = false;
   }
 
-  animarObjeto(objeto, distancia, onCompleteFn){
+  animarObjeto(config, onCompleteFn){
+    const { objeto, distancia = 0, ease = "Cubic", duration = 150, yoyo = true } = config;
     this.tweens.add({
       targets : objeto,
       y : objeto.y - distancia,
-      ease : "Cubic",
+      ease : ease,
       duration : 150, // ms
       onComplete : onCompleteFn,
-      yoyo : true
+      callbackScope : this,
+      yoyo : yoyo
     }) 
   }
 
@@ -187,33 +195,81 @@ export default class Level1 extends Phaser.Scene{
 
   coletarItem(jogador, item){
     if (item.nome === "cogumelo") {
+      if (this.jogador.state.tamanho === "Pequeno") {
+        this.jogador.setVelocityY(-160)
+      }
+      this.jogador.state.tamanho = "Grande";
       this.itensColetaveis.remove(item, true, true);
     }
   }
 
   colisaoComOInimigo(jogador, inimigo){
-    if (jogador.body.velocity.y > 0 && jogador.y + (jogador.displayHeight/2) >= inimigo.y - (inimigo.displayHeight/2)) {
+    if (jogador.body.velocity.y > 0 && jogador.y + (jogador.displayHeight/2) <= inimigo.y - (inimigo.displayHeight/2)) {
       jogador.setVelocityY(-300);
       jogador.hasJumped = true;
       jogador.state.stance = "Jump";
 
-      this.addPontuacao(inimigo.valor);
+      if (inimigo.nome === "LittleGomba") {
+        this.ganharPontosAoMatarOInimigo(jogador, inimigo);
+        inimigo.anims.play("Little Gomba Dead");
+        inimigo.canWalk = false;
+        inimigo.disableBody(true)
 
-      let textoAnim = this.add.text(jogador.x, jogador.y - jogador.body.height, inimigo.valor, { fontSize : "8px" });
-      textoAnim.setOrigin(0.5, 0.5)
+        this.time.addEvent({
+          delay : 2000,
+          callback : function removerInimigo () {
+            this.inimigos.remove(inimigo, true, true);
+          },
+          callbackScope : this
+        })
+      } else if (inimigo.nome === "KoopaTroopa") {
+        if (!inimigo.foiAtingido) {
+          this.ganharPontosAoMatarOInimigo(jogador, inimigo);
+          inimigo.foiAtingido = true;
+          inimigo.anims.play("Koopa Troopa Defend");
+          inimigo.canWalk = false;
+        } else if (inimigo.foiAtingido) {
+/*           if (!inimigo.canWalk) {
+            inimigo.canWalk = true;
+          } else {
+            inimigo.canWalk = false;
+          } */
+          let direcao = 0;
+          if (Math.random() < 0.5) {
+            direcao = -1;
+          } else {
+            direcao = 1;
+          }
+          inimigo.direcao = direcao;
+          inimigo.velocidade.x = 400;
+          inimigo.canWalk = !inimigo.canWalk;
+        }
+      }
 
-      this.tweens.add({
-        targets : textoAnim,
-        y : textoAnim.y - 40,
-        ease : "Circ",
-        duration : 300,
-        onComplete : function destruirTexto () {
-          textoAnim.destroy();
-        },
-        onCompleteScope : this
-      })
-
-      this.inimigos.remove(inimigo, true, true);
+      // this.inimigos.remove(inimigo, true, true);
+    } else if (inimigo.nome === "KoopaTroopa" && inimigo.foiAtingido && !inimigo.canWalk) {
+      console.log("FOI")
+      if (jogador.x > inimigo.x) {
+        inimigo.direcao = -1;
+        inimigo.velocidade.x = 400;
+        inimigo.canWalk = true;
+      } else if (jogador.x < inimigo.x) {
+        inimigo.direcao = 1;
+        inimigo.velocidade.x = 400;
+        inimigo.canWalk = true;
+      }
+    } else {
+      console.log ("Game Over")
     }
+  }
+
+  ganharPontosAoMatarOInimigo (jogador, inimigo) {
+    this.addPontuacao(inimigo.valor);
+    const textoAnim = this.add.text(jogador.x, jogador.y - jogador.body.height, inimigo.valor, { fontSize : "8px" });
+    textoAnim.setOrigin(0.5, 0.5);
+    const config = { objeto : textoAnim, distancia : 40, duration : 400, ease : "Circ", yoyo : false }
+    this.animarObjeto(config, function destruirTexto () {
+      textoAnim.destroy();
+    })
   }
 }
