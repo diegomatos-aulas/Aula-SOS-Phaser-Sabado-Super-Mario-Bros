@@ -6,10 +6,11 @@ export default class Level1 extends Phaser.Scene{
     super("Level1")
   }
 
-  init() {
+  init({jogadorEscolhido}) {
     const { width, height } = this.sys.game.canvas;
     this.GAME_WIDTH = width;
     this.GAME_HEIGHT = height;
+    this.jogadorEscolhido = jogadorEscolhido;
   }
 
   create(){
@@ -25,7 +26,7 @@ export default class Level1 extends Phaser.Scene{
     this.world.setCollisionByProperty({collide : true});
 
     // Jogador
-    this.jogador = new Jogador(150, this.GAME_HEIGHT - 40, this, "Mario", "Pequeno", "Idle");
+    this.jogador = new Jogador(150, this.GAME_HEIGHT - 40, this, this.jogadorEscolhido, "Pequeno", "Idle");
 
     this.inimigos = this.add.group();
     this.world.forEachTile(criarInimigo.bind(this));
@@ -136,8 +137,24 @@ export default class Level1 extends Phaser.Scene{
 
   colisaoComOsTijolos(jogador, tijolo){
     if(jogador.y - (jogador.displayHeight/2) >= tijolo.y + (tijolo.displayHeight/2)){
-      const config = { objeto : tijolo, distancia : tijolo.displayHeight/2 }
-      this.animarObjeto(config, null);
+      if (jogador.state.tamanho === "Grande"){
+        const particles = this.add.particles("brickParticle");
+        particles.createEmitter({
+          speed: { min: 50, max: 130 },
+          gravityY: 300,
+          quantity: 20,
+          maxParticles: 20,
+          rotate: { start: 0, end: 360 },
+          lifespan: 1000,
+          x: tijolo.x,
+          y: tijolo.y
+        })
+
+        tijolo.destroy();
+      } else {
+        const config = { objeto : tijolo, distancia : tijolo.displayHeight/2 }
+        this.animarObjeto(config, null);  
+      }
     }
   }
 
@@ -248,7 +265,6 @@ export default class Level1 extends Phaser.Scene{
 
       // this.inimigos.remove(inimigo, true, true);
     } else if (inimigo.nome === "KoopaTroopa" && inimigo.foiAtingido && !inimigo.canWalk) {
-      console.log("FOI")
       if (jogador.x > inimigo.x) {
         inimigo.direcao = -1;
         inimigo.velocidade.x = 400;
@@ -258,8 +274,19 @@ export default class Level1 extends Phaser.Scene{
         inimigo.velocidade.x = 400;
         inimigo.canWalk = true;
       }
+    } else if (jogador.state.tamanho === "Grande"){
+      if (inimigo.x > jogador.x) {
+        console.log("Empurrar para a esquerda")
+      } else {
+        console.log("Empurrar para a direita")
+      }
+      jogador.state.tamanho = "Pequeno";
     } else {
-      console.log ("Game Over")
+      const data = {
+        level : "Level1",
+        texto : "World 1-1"
+      }
+      this.scene.start("GameOverScene", data)
     }
   }
 
