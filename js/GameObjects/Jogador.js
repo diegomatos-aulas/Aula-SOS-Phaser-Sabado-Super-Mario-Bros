@@ -7,10 +7,18 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
 
     this.setGravity(0, 1200);
     this.setCollideWorldBounds(true);
+    this.setMaxVelocity(100, 420);
 
     this.velocidade = {
       x: 100,
       y: 420
+    }
+
+    this.atrito = 200;
+
+    this.aceleracao = {
+      x : 350,
+      y : 210
     }
 
     this.state = {
@@ -23,28 +31,43 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
   }
 
   update(cursor){
-    this.movimentacaoDoJogador(cursor);
     this.animacaoDoJogador();
+
+    if (!this.active) {
+      return
+    }
+
+    this.movimentacaoDoJogador(cursor);
   }
 
   movimentacaoDoJogador(cursor){
     // this.setVelocityX(0);
 
     if (cursor.right.isDown){
-      this.setVelocityX(this.velocidade.x);
+      // this.setVelocityX(this.velocidade.x);
+      this.setAccelerationX(this.aceleracao.x)
       this.flipX = false;
 
-      if (!this.hasJumped) {
-        this.state.stance = "Walking";
-      }          
+      if (!this.hasJumped && (this.body.onFloor() || this.body.touching.down)) {
+        if (this.body.velocity.x < 0) {
+          this.state.stance = "Changing Direction"
+        } else{
+          this.state.stance = "Walking";
+        }
+      }
     }
     else if (cursor.left.isDown){
-      this.setVelocityX(-this.velocidade.x);
+      // this.setVelocityX(-this.velocidade.x);
+      this.setAccelerationX(-this.aceleracao.x)
       this.flipX = true;
 
-      if (!this.hasJumped) {
-        this.state.stance = "Walking";
-      }      
+      if (!this.hasJumped && (this.body.onFloor() || this.body.touching.down)) {
+        if (this.body.velocity.x > 0) {
+          this.state.stance = "Changing Direction"
+        } else{
+          this.state.stance = "Walking";
+        }
+      }
     }
 
     // console.log(cursor.up.isDown && !this.hasJumped && (this.body.onFloor() || this.body.touching.down))
@@ -52,6 +75,12 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityY(-this.velocidade.y);
       this.state.stance = "Jump";
       this.hasJumped = true;
+
+      if (this.state.tamanho === "Pequeno") {
+        this.scene.jumpSmallSFX.play();
+      } else if (this.state.tamanho === "Grande") {
+        this.scene.jumpSuperSFX.play();
+      }
     }
 
     if (cursor.up.isUp && this.body.velocity.y === 0 && (this.body.onFloor() || this.body.touching.down)){
@@ -60,8 +89,10 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
 
 
     if (cursor.right.isUp && cursor.left.isUp){
-      this.setVelocityX(0);
-      if (!this.hasJumped) {
+      // this.setVelocityX(0);
+      this.setAccelerationX(0)
+      this.setDragX(this.atrito)
+      if (this.body.velocity.y === 0 && (this.body.onFloor() || this.body.touching.down)) {
         this.state.stance = "Idle";
       }
     }
@@ -69,7 +100,6 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
 
   animacaoDoJogador(){
     const {jogador, tamanho, stance} = this.state;
-    
 
     this.anims.play(`${jogador} ${tamanho} ${stance}`, true);
     this.body.setSize();
